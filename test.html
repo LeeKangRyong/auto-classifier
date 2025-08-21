@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>텍스트 분류 플러그인</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+
+        .section h2 {
+            color: #374151;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            border-bottom: 2px solid #e5e7eb;
+            padding-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        select.form-control {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6,9 12,15 18,9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 20px;
+            appearance: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280, #9ca3af);
+        }
+
+        .btn-full {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .categories {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .category-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .category-card:hover {
+            border-color: #4f46e5;
+            transform: translateY(-2px);
+        }
+
+        .category-icon {
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .category-title {
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 5px;
+        }
+
+        .category-desc {
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+
+        .result {
+            margin-top: 30px;
+            padding: 25px;
+            border-radius: 12px;
+            border-left: 5px solid #10b981;
+            background: #ecfdf5;
+            display: none;
+        }
+
+        .result.error {
+            border-left-color: #ef4444;
+            background: #fef2f2;
+        }
+
+        .result h3 {
+            color: #065f46;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .result.error h3 {
+            color: #991b1b;
+        }
+
+        .result-content {
+            font-size: 1.1em;
+            line-height: 1.6;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f4f6;
+            border-left: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .config-section {
+            background: #f8fafc;
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 30px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 60px;
+            height: 34px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 34px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 26px;
+            width: 26px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .slider {
+            background-color: #4f46e5;
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
+
+        .api-test {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .status-indicator {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .status-success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .status-error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .status-testing {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 15px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .header h1 {
+                font-size: 2em;
+            }
+            
+            .main-content {
+                padding: 25px;
+            }
+            
+            .categories {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🤖 텍스트 분류 플러그인</h1>
+            <p>AI를 활용한 지능형 메시지 카테고리 분류 도구</p>
+        </div>
+
+        <div class="main-content">
+            <!-- API 설정 섹션 -->
+            <div class="section">
+                <h2>⚙️ API 설정</h2>
+                <div class="config-section">
+                    <div class="form-group">
+                        <label for="apiEngine">분류 엔진</label>
+                        <select id="apiEngine" class="form-control">
+                            <option value="chatgpt">OpenAI ChatGPT</option>
+                            <option value="jina">Jina AI Classifier</option>
+                        </select>
+                    </div>
+
+                    <div id="chatgptConfig">
+                        <div class="form-group">
+                            <label for="apiKey">OpenAI API Key</label>
+                            <input type="password" id="apiKey" class="form-control" placeholder="sk-...">
+                        </div>
+                        <div class="form-group">
+                            <label for="baseUrl">Base URL (선택사항)</label>
+                            <input type="text" id="baseUrl" class="form-control" value="https://api.openai.com/v1" placeholder="https://api.openai.com/v1">
+                        </div>
+                        <div class="form-group">
+                            <label for="model">모델</label>
+                            <input type="text" id="model" class="form-control" value="gpt-4o-mini" placeholder="gpt-4o-mini">
+                        </div>
+                    </div>
+
+                    <div id="jinaConfig" style="display: none;">
+                        <div class="form-group">
+                            <label for="jinaApiKey">Jina AI API Key</label>
+                            <input type="password" id="jinaApiKey" class="form-control" placeholder="jina_...">
+                        </div>
+                        <div class="form-group">
+                            <label for="jinaModel">모델</label>
+                            <input type="text" id="jinaModel" class="form-control" value="jina-embeddings-v3" placeholder="jina-embeddings-v3">
+                        </div>
+                    </div>
+
+                    <div class="api-test">
+                        <button type="button" id="testApi" class="btn btn-secondary">API 테스트</button>
+                        <div id="apiStatus" class="status-indicator" style="display: none;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 카테고리 설명 -->
+            <div class="section">
+                <h2>📂 분류 카테고리</h2>
+                <div class="categories">
+                    <div class="category-card">
+                        <div class="category-icon">💬</div>
+                        <div class="category-title">일반</div>
+                        <div class="category-desc">일상적인 대화 및 잡담</div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-icon">💡</div>
+                        <div class="category-title">의견</div>
+                        <div class="category-desc">아이디어, 제안 등 기여 중심 메시지</div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-icon">🔄</div>
+                        <div class="category-title">피드백</div>
+                        <div class="category-desc">특정 작업이나 기획에 대한 피드백</div>
+                    </div>
+                    <div class="category-card">
+                        <div class="category-icon">❓</div>
+                        <div class="category-title">질문</div>
+                        <div class="category-desc">도움 요청 및 질의응답</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 텍스트 입력 및 분류 -->
+            <div class="section">
+                <h2>📝 텍스트 분류</h2>
+                <div class="form-group">
+                    <label for="inputText">분류할 텍스트를 입력하세요</label>
+                    <textarea id="inputText" class="form-control" placeholder="여기에 분류하고 싶은 메시지나 텍스트를 입력하세요...
+
+예시:
+- 오늘 회의 어땠어? 다들 잘 마무리된 것 같아
+- 새로운 기능 추가에 대한 아이디어가 있는데, 사용자 경험을 개선할 수 있을 것 같아요
+- 지난번 프로젝트 발표 정말 잘했어요! 다음엔 시각자료를 좀 더 간소화하면 좋을 것 같아요
+- 이 기능을 어떻게 사용하는지 알려주실 수 있나요?"></textarea>
+                </div>
+
+                <button type="button" id="classifyBtn" class="btn btn-full">
+                    🚀 텍스트 분류하기
+                </button>
+
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>AI가 텍스트를 분석하고 있습니다...</p>
+                </div>
+
+                <div id="result" class="result">
+                    <h3>🎯 분류 결과</h3>
+                    <div id="resultContent" class="result-content"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 고정 카테고리 정의
+        const FIXED_CATEGORIES = [
+            "💬_일반",
+            "💡_의견", 
+            "🔄_피드백",
+            "❓_질문"
+        ];
+
+        const CATEGORY_DESCRIPTIONS = {
+            "💬_일반": "일상적인 대화 및 잡담",
+            "💡_의견": "아이디어, 제안 등 기여 중심 메시지",
+            "🔄_피드백": "특정 작업이나 기획에 대한 피드백",
+            "❓_질문": "도움 요청 및 질의응답"
+        };
+
+        // DOM 요소들
+        const apiEngineSelect = document.getElementById('apiEngine');
+        const chatgptConfig = document.getElementById('chatgptConfig');
+        const jinaConfig = document.getElementById('jinaConfig');
+        const testApiBtn = document.getElementById('testApi');
+        const apiStatus = document.getElementById('apiStatus');
+        const classifyBtn = document.getElementById('classifyBtn');
+        const inputText = document.getElementById('inputText');
+        const loading = document.getElementById('loading');
+        const result = document.getElementById('result');
+        const resultContent = document.getElementById('resultContent');
+
+        // 설정 저장/불러오기
+        function saveSettings() {
+            const settings = {
+                apiEngine: apiEngineSelect.value,
+                apiKey: document.getElementById('apiKey').value,
+                baseUrl: document.getElementById('baseUrl').value,
+                model: document.getElementById('model').value,
+                jinaApiKey: document.getElementById('jinaApiKey').value,
+                jinaModel: document.getElementById('jinaModel').value
+            };
+            localStorage.setItem('textClassifierSettings', JSON.stringify(settings));
+        }
+
+        function loadSettings() {
+            const saved = localStorage.getItem('textClassifierSettings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                apiEngineSelect.value = settings.apiEngine || 'chatgpt';
+                document.getElementById('apiKey').value = settings.apiKey || '';
+                document.getElementById('baseUrl').value = settings.baseUrl || 'https://api.openai.com/v1';
+                document.getElementById('model').value = settings.model || 'gpt-4o-mini';
+                document.getElementById('jinaApiKey').value = settings.jinaApiKey || '';
+                document.getElementById('jinaModel').value = settings.jinaModel || 'jina-embeddings-v3';
+                toggleApiConfig();
+            }
+        }
+
+        // API 엔진 변경 시 설정 화면 전환
+        function toggleApiConfig() {
+            if (apiEngineSelect.value === 'chatgpt') {
+                chatgptConfig.style.display = 'block';
+                jinaConfig.style.display = 'none';
+            } else {
+                chatgptConfig.style.display = 'none';
+                jinaConfig.style.display = 'block';
+            }
+        }
+
+        // ChatGPT API 호출
+        async function callChatGPTAPI(systemRole, userPrompt, apiKey, model, baseURL) {
+            const response = await fetch(`${baseURL}/chat/completions`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: model,
+                    messages: [
+                        { role: "system", content: systemRole },
+                        { role: "user", content: userPrompt }
+                    ],
+                    max_tokens: 150,
+                    temperature: 0
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`API Error: ${response.status} - ${errorData}`);
+            }
+
+            const data = await response.json();
+            return data.choices[0].message.content;
+        }
+
+        // Jina AI API 호출
+        async function callJinaAPI(apiKey, baseURL, model, inputTexts, labels) {
+            const response = await fetch(`${baseURL}/classify`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model: model,
+                    input: inputTexts.map(text => ({ text })),
+                    labels: labels
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.text();
+                throw new Error(`Jina API Error: ${response.status} - ${errorData}`);
+            }
+
+            return await response.json();
+        }
+
+        // API 테스트
+        async function testAPI() {
+            testApiBtn.disabled = true;
+            apiStatus.style.display = 'inline-block';
+            apiStatus.className = 'status-indicator status-testing';
+            apiStatus.textContent = '테스트 중...';
+
+            try {
+                if (apiEngineSelect.value === 'chatgpt') {
+                    const apiKey = document.getElementById('apiKey').value;
+                    const baseUrl = document.getElementById('baseUrl').value;
+                    const model = document.getElementById('model').value;
+
+                    if (!apiKey) {
+                        throw new Error('API 키를 입력해주세요.');
+                    }
+
+                    await callChatGPTAPI('You are a helpful assistant.', 'Hello', apiKey, model, baseUrl);
+                } else {
+                    const jinaApiKey = document.getElementById('jinaApiKey').value;
+                    const jinaModel = document.getElementById('jinaModel').value;
+
+                    if (!jinaApiKey) {
+                        throw new Error('Jina AI API 키를 입력해주세요.');
+                    }
+
+                    await callJinaAPI(jinaApiKey, 'https://api.jina.ai/v1', jinaModel, ['test'], ['positive', 'negative']);
+                }
+
+                apiStatus.className = 'status-indicator status-success';
+                apiStatus.textContent = '✅ API 연결 성공';
+            } catch (error) {
+                apiStatus.className = 'status-indicator status-error';
+                apiStatus.textContent = `❌ ${error.message}`;
+            } finally {
+                testApiBtn.disabled = false;
+            }
+        }
+
+        // 텍스트 분류
+        async function classifyText() {
+            const text = inputText.value.trim();
+            if (!text) {
+                showResult('입력된 텍스트가 없습니다.', true);
+                return;
+            }
+
+            classifyBtn.disabled = true;
+            loading.style.display = 'block';
+            result.style.display = 'none';
+
+            try {
+                let classification;
+
+                if (apiEngineSelect.value === 'chatgpt') {
+                    const apiKey = document.getElementById('apiKey').value;
+                    const baseUrl = document.getElementById('baseUrl').value;
+                    const model = document.getElementById('model').value;
+
+                    if (!apiKey) {
+                        throw new Error('API 키를 입력해주세요.');
+                    }
+
+                    const prompt = `다음 텍스트를 4가지 카테고리 중 하나로 분류해주세요:
+"""
+${text}
+"""
+
+카테고리:
+- 💬_일반: 일상적인 대화 및 잡담
+- 💡_의견: 아이디어, 제안 등 기여 중심 메시지  
+- 🔄_피드백: 특정 작업이나 기획에 대한 피드백
+- ❓_질문: 도움 요청 및 질의응답
+
+Answer format is JSON {reliability:0~1, output:"selected_category"}.
+Even if you are unsure, qualify the reliability and select the best match.
+Respond only with valid JSON.`;
+
+                    const responseRaw = await callChatGPTAPI(
+                        "You are a JSON answer bot. Don't answer other words.",
+                        prompt,
+                        apiKey,
+                        model,
+                        baseUrl
+                    );
+
+                    const response = JSON.parse(responseRaw.replace(/^```json\n/, "").replace(/\n```$/, ""));
+                    classification = {
+                        category: response.output,
+                        confidence: response.reliability,
+                        engine: 'ChatGPT'
+                    };
+
+                } else {
+                    const jinaApiKey = document.getElementById('jinaApiKey').value;
+                    const jinaModel = document.getElementById('jinaModel').value;
+
+                    if (!jinaApiKey) {
+                        throw new Error('Jina AI API 키를 입력해주세요.');
+                    }
+
+                    const response = await callJinaAPI(
+                        jinaApiKey,
+                        'https://api.jina.ai/v1',
+                        jinaModel,
+                        [text],
+                        FIXED_CATEGORIES
+                    );
+
+                    if (response.data && response.data.length > 0) {
+                        const predictions = response.data[0].predictions.sort((a, b) => b.score - a.score);
+                        classification = {
+                            category: predictions[0].label,
+                            confidence: predictions[0].score,
+                            engine: 'Jina AI',
+                            tokenUsage: response.usage?.total_tokens
+                        };
+                    } else {
+                        throw new Error('분류 결과를 받을 수 없습니다.');
+                    }
+                }
+
+                displayResult(classification);
+
+            } catch (error) {
+                showResult(`오류가 발생했습니다: ${error.message}`, true);
+            } finally {
+                classifyBtn.disabled = false;
+                loading.style.display = 'none';
+            }
+        }
+
+        // 결과 표시
+        function displayResult(classification) {
+            const categoryIcon = classification.category.split('_')[0];
+            const categoryName = classification.category.split('_')[1];
+            const description = CATEGORY_DESCRIPTIONS[classification.category];
+            const confidence = Math.round(classification.confidence * 100);
+
+            let resultHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="font-size: 4em; margin-bottom: 10px;">${categoryIcon}</div>
+                    <div style="font-size: 1.5em; font-weight: bold; color: #374151; margin-bottom: 5px;">${categoryName}</div>
+                    <div style="color: #6b7280; margin-bottom: 15px;">${description}</div>
+                    <div style="background: #f3f4f6; padding: 10px; border-radius: 8px; display: inline-block;">
+                        <strong>신뢰도:</strong> ${confidence}% | <strong>엔진:</strong> ${classification.engine}
+                        ${classification.tokenUsage ? ` | <strong>토큰:</strong> ${classification.tokenUsage}` : ''}
+                    </div>
+                </div>
+            `;
+
+            resultContent.innerHTML = resultHTML;
+            result.className = 'result';
+            result.style.display = 'block';
+        }
+
+        // 오류 결과 표시
+        function showResult(message, isError = false) {
+            resultContent.innerHTML = `<p>${message}</p>`;
+            result.className = isError ? 'result error' : 'result';
+            result.style.display = 'block';
+        }
+
+        // 이벤트 리스너
+        apiEngineSelect.addEventListener('change', () => {
+            toggleApiConfig();
+            saveSettings();
+        });
+
+        // 설정 변경 시 자동 저장
+        document.querySelectorAll('#chatgptConfig input, #jinaConfig input').forEach(input => {
+            input.addEventListener('change', saveSettings);
+        });
+
+        testApiBtn.addEventListener('click', testAPI);
+        classifyBtn.addEventListener('click', classifyText);
+
+        // Enter 키로 분류 실행
+        inputText.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'Enter') {
+                classifyText();
+            }
+        });
+
+        // 초기화
+        loadSettings();
+        toggleApiConfig();
+    </script>
+</body>
+</html>

@@ -13,7 +13,15 @@ export enum ReferenceType {
     All,
     Filter,
     Manual,
+    Fixed
 }
+
+export const FIXED_CATEGORIES = [
+    "💬_일반",
+    "💡_의견", 
+    "🔄_피드백",
+    "❓_질문"
+];
 
 export enum OutLocation {
     Cursor,
@@ -363,6 +371,7 @@ export class AutoClassifierSettingTab extends PluginSettingTab {
                         .addOption(String(ReferenceType.All), "All tags")
                         .addOption(String(ReferenceType.Filter), "Filtered tags",)
                         .addOption(String(ReferenceType.Manual), "Manual tags")
+                        .addOption(String(ReferenceType.Fixed), "Fixed categories")
                         .setValue(String(commandOption.refType))
                         .onChange(async (refTye) => {
                             this.setRefType(parseInt(refTye));
@@ -815,6 +824,9 @@ export class AutoClassifierSettingTab extends PluginSettingTab {
                 commandOption.manualRefs = value?.split(/,|\n/).map((tag) => tag.trim());
             }
             commandOption.refs = commandOption.manualRefs;
+        }
+        else if (refType == ReferenceType.Fixed) { // 새로 추가
+            commandOption.refs = FIXED_CATEGORIES;
         }
         await this.plugin.saveSettings();
     }
